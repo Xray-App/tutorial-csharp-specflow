@@ -39,14 +39,14 @@ ENV PATH /chromedriver:$PATH
 # set display port to avoid crash
 ENV DISPLAY=:99
 
-WORKDIR /source/SpecFlowCalculator
+WORKDIR /source/Calculator
 RUN dotnet restore
 RUN dotnet clean
 RUN dotnet build
-WORKDIR /source/SpecFlowCalculator.Specs
+WORKDIR /source/Calculator.Specs
 RUN dotnet restore
 RUN dotnet clean
 
-WORKDIR /source/SpecFlowCalculator.Specs
+WORKDIR /source/Calculator.Specs
 ENTRYPOINT ["dotnet", "test"]
 

@@ -1,6 +1,6 @@
 # This is a basic workflow to help you get started with Actions
 
-name: CI with Xray (server/DC)
+name: CI with Xray (cloud)
 
 # Controls when the action will run. 
 on:
@@ -33,21 +33,25 @@ jobs:
 #        uses: browser-actions/setup-chrome@v0.0.0
 #      - name: setup-chromedriver
 #        uses: nanasess/setup-chromedriver@v1.0.1
+      - name: generate auxiliary JSON for authenticating with Xray cloud and obtain token
+        run: |
+          cat cloud_auth.json.sample  | sed s/CLIENT_ID/${{ secrets.XRAYCLOUD_CLIENT_ID }}/g | sed s/CLIENT_SECRET/${{ secrets.XRAYCLOUD_CLIENT_SECRET }}/g > cloud_auth.json
+          echo token=$(curl -H "Content-Type: application/json" -X POST --data @"cloud_auth.json" ${{ secrets.XRAYCLOUD_BASE_URL }}/api/v1/authenticate| tr -d '"') >> $GITHUB_ENV
       - name: Export scenarios from Xray and generate .feature file(s)
         run: |
-          FEATURES_FILE=features.zip
           cd net5.0/Calculator.Specs
+          FEATURES_FILE=features.zip
           rm -f $FEATURES_FILE
-          curl -u ${{ secrets.JIRASERVER_USERNAME }}:${{ secrets.JIRASERVER_PASSWORD }}  "${{ secrets.JIRASERVER_BASE_URL }}/rest/raven/2.0/export/test?keys=${{ secrets.XRAYSERVER_ISSUE_KEYS_TO_EXPORT_FROM }}&fz=true" -o $FEATURES_FILE
+          curl -H "Content-Type: application/json" -X GET -H "Authorization: Bearer ${{ env.token }}" "${{ secrets.XRAYCLOUD_BASE_URL }}/api/v1/export/cucumber?keys=${{ secrets.XRAYCLOUD_ISSUE_KEYS_TO_EXPORT_FROM }}" -o $FEATURES_FILE
           rm -f Features/*.feature Features/*.cs
           unzip -o $FEATURES_FILE  -d Features
       - name: Run tests
         run: cd net5.0/Calculator.Specs && dotnet test
-      - name: generate auxiliary file to define fields on the Test Execution
+      - name: generate auxiliary JSON to define some fields on the Test Execution to be created
         run: |
           cd net5.0/Calculator.Specs
-          cat testexec_template.json  | sed s/PROJECT_KEY/${{ secrets.JIRASERVER_PROJECT_KEY }}/g | sed s/CF_TEST_ENVIRONMENT/${{ secrets.JIRASERVER_CF_TEST_ENVIRONMENTS }}/g |  sed s/TEST_ENVIRONMENT_NAME/${{ env.BROWSER }}/g | sed s/CF_TEST_PLAN/${{ secrets.JIRASERVER_CF_TEST_PLAN }}/g  | sed s/TESTPLAN_KEY/${{ secrets.XRAYSERVER_TEST_PLAN_KEY }}/g > test_exec.json
-      - name: "Import results to Xray (server/DC) using multipart endpoint"
+          cat testexec_cloud_template.json  | sed s/PROJECT_KEY/${{ secrets.JIRACLOUD_PROJECT_KEY }}/g | sed s/TEST_ENVIRONMENT_NAME/jdk${{ env.JDK_VERSION }}/g | sed s/TESTPLAN_KEY/${{ secrets.XRAYCLOUD_TEST_PLAN_KEY }}/g > test_exec.json
+      - name: "Import results to Xray (cloud) using multipart endpoint"
         run: |
           cd net5.0/Calculator.Specs
-          curl -X POST -u ${{ secrets.JIRASERVER_USERNAME }}:${{ secrets.JIRASERVER_PASSWORD }} -F info=@test_exec.json -F result=@"TestResults/cucumber.json" ${{ secrets.JIRASERVER_BASE_URL }}/rest/raven/2.0/import/execution/cucumber/multipart
+          curl -X POST -H "Authorization: Bearer ${{ env.token }}"  -F info=@test_exec.json -F results=@"TestResults/cucumber.json" "${{ secrets.XRAYCLOUD_BASE_URL }}/api/v1/import/execution/cucumber/multipart"
