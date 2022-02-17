@@ -34,4 +34,4 @@ jobs:
 #      - name: setup-chromedriver
 #        uses: nanasess/setup-chromedriver@v1.0.1
       - name: Run tests
-        run: cd Calculator.Specs && dotnet test
+        run: cd net5.0/Calculator.Specs && dotnet test
