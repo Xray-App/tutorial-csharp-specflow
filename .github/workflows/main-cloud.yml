@@ -51,7 +51,7 @@ jobs:
       - name: generate auxiliary JSON to define some fields on the Test Execution to be created
         run: |
           cd net5.0/Calculator.Specs
-          cat testexec_cloud_template.json  | sed s/PROJECT_KEY/${{ secrets.JIRACLOUD_PROJECT_KEY }}/g | sed s/TEST_ENVIRONMENT_NAME/jdk${{ env.JDK_VERSION }}/g | sed s/TESTPLAN_KEY/${{ secrets.XRAYCLOUD_TEST_PLAN_KEY }}/g > test_exec.json
+          cat testexec_cloud_template.json  | sed s/PROJECT_KEY/${{ secrets.JIRACLOUD_PROJECT_KEY }}/g | sed s/TEST_ENVIRONMENT_NAME//g | sed s/TESTPLAN_KEY/${{ secrets.XRAYCLOUD_TEST_PLAN_KEY }}/g > test_exec.json
       - name: "Import results to Xray (cloud) using multipart endpoint"
         run: |
           cd net5.0/Calculator.Specs
