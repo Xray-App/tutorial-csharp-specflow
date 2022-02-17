@@ -1,0 +1,8 @@
+.DS_Store
+bin/
+obj/
+net5.0/Calculator.Specs/TestResults/*
+net5.0/Calculator.Specs/Features/*
+*.zip
+*.log
+cloud_auth.json
