@@ -35,14 +35,15 @@ jobs:
 #        uses: nanasess/setup-chromedriver@v1.0.1
       - name: generate auxiliary JSON for authenticating with Xray cloud and obtain token
         run: |
+          cd net5.0/Calculator.Specs
           cat cloud_auth.json.sample  | sed s/CLIENT_ID/${{ secrets.XRAYCLOUD_CLIENT_ID }}/g | sed s/CLIENT_SECRET/${{ secrets.XRAYCLOUD_CLIENT_SECRET }}/g > cloud_auth.json
-          echo token=$(curl -H "Content-Type: application/json" -X POST --data @"cloud_auth.json" ${{ secrets.XRAYCLOUD_BASE_URL }}/api/v1/authenticate| tr -d '"') >> $GITHUB_ENV
+          echo token=$(curl -H "Content-Type: application/json" -X POST --data @"cloud_auth.json" ${{ secrets.XRAYCLOUD_BASE_URL }}/api/v2/authenticate| tr -d '"') >> $GITHUB_ENV
       - name: Export scenarios from Xray and generate .feature file(s)
         run: |
           cd net5.0/Calculator.Specs
           FEATURES_FILE=features.zip
           rm -f $FEATURES_FILE
-          curl -H "Content-Type: application/json" -X GET -H "Authorization: Bearer ${{ env.token }}" "${{ secrets.XRAYCLOUD_BASE_URL }}/api/v1/export/cucumber?keys=${{ secrets.XRAYCLOUD_ISSUE_KEYS_TO_EXPORT_FROM }}" -o $FEATURES_FILE
+          curl -H "Content-Type: application/json" -X GET -H "Authorization: Bearer ${{ env.token }}" "${{ secrets.XRAYCLOUD_BASE_URL }}/api/v2/export/cucumber?keys=${{ secrets.XRAYCLOUD_ISSUE_KEYS_TO_EXPORT_FROM }}" -o $FEATURES_FILE
           rm -f Features/*.feature Features/*.cs
           unzip -o $FEATURES_FILE  -d Features
       - name: Run tests
@@ -54,4 +55,4 @@ jobs:
       - name: "Import results to Xray (cloud) using multipart endpoint"
         run: |
           cd net5.0/Calculator.Specs
-          curl -X POST -H "Authorization: Bearer ${{ env.token }}"  -F info=@test_exec.json -F results=@"TestResults/cucumber.json" "${{ secrets.XRAYCLOUD_BASE_URL }}/api/v1/import/execution/cucumber/multipart"
+          curl -X POST -H "Authorization: Bearer ${{ env.token }}"  -F info=@test_exec.json -F results=@"TestResults/cucumber.json" "${{ secrets.XRAYCLOUD_BASE_URL }}/api/v2/import/execution/cucumber/multipart"
